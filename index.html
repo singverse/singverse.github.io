@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingVERSE Demo Page</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+
+    <style>
+        :root {
+            --bg-color: #f8f9fa; --card-bg: #ffffff; --text-dark: #212529;
+            --text-light: #495057; --primary-accent: #007bff; --border-color: #dee2e6;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.07); --border-radius: 16px;
+        }
+        body { font-family: 'Poppins', sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-dark); line-height: 1.7; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        header { text-align: center; padding: 40px 20px; }
+        header h1 { font-size: 3em; margin: 0 0 10px 0; color: var(--text-dark); }
+        header .authors { font-size: 1.2em; color: var(--text-light); margin-bottom: 20px; }
+        .links-bar { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; }
+        .content-section { background: var(--card-bg); margin: 30px auto; padding: 35px; border-radius: var(--border-radius); box-shadow: var(--shadow); max-width: 1200px; }
+        .main-content-grid > div { background: var(--card-bg); padding: 35px; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        h2 { font-size: 2.2em; color: var(--text-dark); border-bottom: 3px solid var(--primary-accent); padding-bottom: 15px; margin-bottom: 30px; }
+        h3 { font-size: 1.3em; color: var(--text-dark); margin-bottom: 10px; font-weight: 600; }
+        .main-content-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr); gap: 30px; align-items: start; }
+        #chart-area { position: sticky; top: 20px; }
+        .filter-group { margin-bottom: 30px; }
+        .filter-subtitle { font-size: 0.9em; color: var(--text-light); margin-top: -5px; margin-bottom: 15px; }
+        .scenario-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+        .scenario-btn { border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-size: 0.95em; font-weight: 600; transition: all 0.3s ease; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .scenario-btn:hover { transform: translateY(-3px); filter: brightness(1.1); }
+        .scenario-btn.active { transform: scale(1.05) translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .device-filter-control { display: flex; background-color: #e9ecef; border-radius: 10px; padding: 5px; width: fit-content; }
+        .device-btn { background: transparent; border: none; padding: 8px 20px; font-size: 0.95em; font-weight: 600; color: var(--text-light); cursor: pointer; transition: all 0.3s ease; border-radius: 8px; }
+        .device-btn.active { background: white; color: var(--primary-accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .sample-card { display: none; margin-bottom: 25px; }
+        .sample-card.visible { display: block; animation: fadeIn 0.5s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .sample-card-header h4 { margin: 0 0 20px 0; font-size: 1.8em; text-align: center; }
+        .sample-content { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .sample-column h5 { text-align: center; font-size: 1.1em; margin: 0 0 20px 0; color: var(--text-light); }
+        .waveform-container { margin-bottom: 20px; }
+        .sample-label { font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
+        .waveform-wrapper { display: flex; align-items: center; gap: 15px; }
+        .waveform { flex-grow: 1; height: 50px; }
+        .play-btn { background: var(--primary-accent); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.5em; display: flex; justify-content: center; align-items: center; transition: background-color 0.2s; }
+        .play-btn:hover { background-color: #0056b3; }
+        .overview-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin: 20px 0; }
+        .chart-container { margin-bottom: 20px; }
+        .chart-container canvas { max-height: 300px; }
+        .chart-view, #detail-info { display: none; }
+        .chart-view.active, #detail-info.active { display: block; }
+        
+        /* Stats display styles */
+        .stats-container { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stats-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin: 20px 0; }
+        .stat-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+        .stat-label { font-weight: 600; color: var(--text-dark); }
+        .stat-value { font-size: 1.1em; font-weight: 700; }
+        .pro-stat { color: #0d6efd; }
+        .non-pro-stat { color: #198754; }
+        .stat-legend { display: flex; gap: 20px; justify-content: center; margin-top: 16px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.9em; }
+        .legend-color { width: 12px; height: 12px; border-radius: 50%; }
+        .legend-color.pro { background-color: #0d6efd; }
+        .legend-color.non-pro { background-color: #198754; }
+        #detail-info ul { list-style-type: none; padding-left: 0; }
+        #detail-info li { background-color: #f8f9fa; border-radius: 8px; padding: 12px 15px; margin-bottom: 10px; display: flex; justify-content: space-between; font-size: 0.95em; }
+        #detail-info li strong { color: var(--text-dark); }
+        @media (max-width: 1200px) { 
+            .main-content-grid { grid-template-columns: 1fr; } 
+            #chart-area { position: static; }
+            .overview-charts-grid { grid-template-columns: 1fr; gap: 20px; }
+        }
+        @media (max-width: 768px) { 
+            .sample-content { grid-template-columns: 1fr; }
+            .chart-container canvas { max-height: 200px; }
+            .overview-charts-grid { gap: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>SingVERSE: a Diverse Real-world Benchmark for Singing Voice Enhancement</h1>
+            <p class="authors">Shaohan Jiang<sup>&star;1</sup> , Junan Zhang<sup>&star;1</sup> , Yunjia Zhang<sup>&star;1</sup> , Jing Yang<sup>2</sup>, Fan Fan<sup>2</sup>, Zhizheng Wu<sup>1</sup></p>
+            <p><sup>&star;</sup>Equal Contribution. Names are in alphabetical order. </p>
+            <p class="authors">
+                <sup>1</sup>The Chinese University of Hong Kong, Shenzhen<br>
+                <sup>2</sup>Central Media Technology Institute, Huawei
+            </p>
+            <div class="links-bar">
+                <a href="" target="_blank"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
+                <a href="https://huggingface.co/datasets/amphion/SingVERSE" target="_blank"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset-yellow" alt="Dataset"></a>
+            </div>
+        </header>
+
+        <section id="abstract" class="content-section">
+            <h2>Abstract</h2>
+            <p>This paper presents a benchmark for singing voice enhancement. The development of singing voice enhancement is limited by the lack of realistic evaluation data. To address this gap, this paper introduces <b>SingVERSE</b>, the first real-world benchmark for singing voice enhancement, covering diverse acoustic scenarios and providing paired, studio-quality clean references. Leveraging <b>SingVERSE</b>, we conduct a comprehensive evaluation of state-of-the-art models and uncover a consistent trade-off between perceptual quality and intelligibility. Finally, we show that training on in-domain singing data substantially improves enhancement performance without degrading speech capabilities, establishing a simple yet effective path forward. This work offers the community a foundational benchmark together with critical insights to guide future advances in this underexplored domain.</p>
+        </section>
+
+        <section id="dataset-overview" class="content-section">
+            <h2>Dataset Overview</h2>
+            <div class="overview-charts-grid">
+                <div class="chart-container">
+                    <h3>Utterance Count Distribution</h3>
+                    <canvas id="utterance-chart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Duration Distribution (seconds)</h3>
+                    <canvas id="duration-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <div class="main-content-grid">
+            <div id="demo-area">
+                <h2>Audio Samples</h2>
+                <div class="filter-group">
+                    <h3>Select Scenario</h3>
+                    <p class="filter-subtitle">Recordings were captured in diverse and challenging real-world environments.</p>
+                    <div id="scenario-buttons" class="scenario-buttons"></div>
+                </div>
+                <div class="filter-group">
+                    <h3>Filter by Device</h3>
+                    <p class="filter-subtitle">Both professional-grade and common consumer devices were used for recording.</p>
+                    <div id="device-filter" class="device-filter-control">
+                        <button class="device-btn active" data-device="All">All Devices</button>
+                        <button class="device-btn" data-device="pro">Professional</button>
+                        <button class="device-btn" data-device="non_pro">Non-Professional</button>
+                    </div>
+                </div>
+                <div id="samples-container"></div>
+                <p id="selection-prompt" style="display: none;">Please select a scenario to visualize audio samples.</p>
+            </div>
+
+            <div id="chart-area">
+                <h2 id="chart-title">Dataset Statistics</h2>
+                <div id="stats-display">
+                    <div class="stats-container">
+                        <h3 id="stats-scenario-title">All Scenarios</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-label">Utterances</div>
+                                <div class="stat-value">
+                                    <span class="pro-stat">1,847</span> / <span class="non-pro-stat">2,082</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Average Duration</div>
+                                <div class="stat-value">
+                                    <span class="pro-stat">8.0s</span> / <span class="non-pro-stat">8.6s</span>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Total Duration</div>
+                                <div class="stat-value">
+                                    <span class="pro-stat">14,792s</span> / <span class="non-pro-stat">17,853s</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-legend">
+                            <span class="legend-item"><span class="legend-color pro"></span>Professional</span>
+                            <span class="legend-item"><span class="legend-color non-pro"></span>Non-Professional</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="detail-info"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const scenarios = ["Concert Hall", "Concert", "Arcade", "Restaurant", "Rehearsal Room", "Classroom", "Basement", "Roadside", "KTV", "Piano Room", "Passageway", "Staircase", "Meeting Room", "Parking Lot", "In the Car", "Shopping Mall", "Dormitory", "Office", "Park"];
+    const colors = ['#ff9aa2', '#ffb7b2', '#ffdac1', '#e2f0cb', '#b5ead7', '#a2d2ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fec89a', '#fde4cf', '#d4a5a5', '#97a7b3', '#c3bef0', '#8de4ff', '#a7d8b1', '#e5d9f2', '#f9d5e5', '#ffffd1'];
+    const proColors = ['#0d6efd', '#0a58ca'];
+    const nonProColors = ['#198754', '#146c43'];
+    const datasetStats = {
+        labels: scenarios, colors: colors,
+        proUtterances: [62, 112, 84, 39, 120, 66, 39, 384, 230, 178, 97, 64, 22, 68, 39, 60, 0, 60, 123],
+        nonProUtterances: [94, 335, 84, 39, 120, 66, 39, 368, 181, 178, 108, 65, 22, 68, 39, 40, 54, 60, 123],
+        proDuration: [611, 1139, 689, 229, 991, 440, 229, 3180, 1772, 1470, 746, 477, 191, 606, 229, 442, 0, 442, 917],
+        nonProDuration: [833, 3966, 689, 229, 991, 440, 229, 3036, 1399, 1470, 860, 481, 191, 606, 229, 302, 551, 442, 917]
+    };
+
+    let charts = {};
+    let currentScenario = null;
+    let currentDevice = 'All';
+    let wavesurferInstances = [];
+
+    const lightenColor = (hex, percent) => {
+        const num = parseInt(hex.replace("#", ""), 16), amt = Math.round(2.55 * percent),
+        R = (num >> 16) + amt, G = (num >> 8 & 0x00FF) + amt, B = (num & 0x0000FF) + amt;
+        return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 + (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255)).toString(16).slice(1);
+    };
+
+    function renderWaveforms() {
+        wavesurferInstances.forEach(ws => ws.destroy());
+        wavesurferInstances = [];
+        const samplesContainer = document.getElementById('samples-container');
+        samplesContainer.innerHTML = '';
+        const scenariosToRender = currentScenario ? [currentScenario] : scenarios;
+        document.getElementById('selection-prompt').style.display = 'none';
+
+        scenariosToRender.forEach(scenario => {
+            const sampleCard = document.createElement('div');
+            sampleCard.className = 'sample-card visible';
+            sampleCard.innerHTML = `<div class="sample-card-header"><h4 class="sample-card-title">${scenario}</h4></div><div class="sample-content"><div class="sample-column noisy-col"><h5>Noisy Input</h5></div><div class="sample-column clean-col"><h5>Clean Reference</h5></div></div>`;
+            samplesContainer.appendChild(sampleCard);
+            const noisyCol = sampleCard.querySelector('.noisy-col'), cleanCol = sampleCard.querySelector('.clean-col');
+            const samples = [];
+            if (currentDevice === 'All' || currentDevice === 'pro') samples.push({ type: 'Professional', device: 'pro', part: 1 }, { type: 'Professional', device: 'pro', part: 2 });
+            if (currentDevice === 'All' || currentDevice === 'non_pro') samples.push({ type: 'Non-Professional', device: 'non_pro', part: 1 }, { type: 'Non-Professional', device: 'non_pro', part: 2 });
+            const scenarioId = scenario.replace(/ /g, '_');
+            samples.forEach(sample => {
+                ['noisy', 'clean'].forEach(condition => {
+                    const col = (condition === 'noisy') ? noisyCol : cleanCol;
+                    const waveformId = `${condition}-${scenarioId}-${sample.device}-${sample.part}`;
+                    const container = document.createElement('div');
+                    container.className = 'waveform-container';
+                    container.innerHTML = `<p class="sample-label">${sample.type} #${sample.part}</p><div class="waveform-wrapper"><button class="play-btn">&#9658;</button><div id="${waveformId}" class="waveform"></div></div>`;
+                    col.appendChild(container);
+                    const progressColor = sample.device === 'pro' ? proColors[sample.part - 1] : nonProColors[sample.part - 1];
+                    const waveColor = lightenColor(progressColor.replace("#", ""), 50);
+                    const wavesurfer = WaveSurfer.create({ container: `#${waveformId}`, waveColor, progressColor, height: 50, barWidth: 2, barGap: 2, barRadius: 2, responsive: true, hideScrollbar: true });
+                    wavesurfer.load(`data/${scenarioId}/${condition}/${sample.device}_${sample.part}.wav`);
+                    wavesurferInstances.push(wavesurfer);
+                    const playBtn = container.querySelector('.play-btn');
+                    playBtn.onclick = () => wavesurfer.playPause();
+                    wavesurfer.on('play', () => playBtn.innerHTML = '&#10074;&#10074;');
+                    wavesurfer.on('pause', () => playBtn.innerHTML = '&#9658;');
+                    wavesurfer.on('finish', () => playBtn.innerHTML = '&#9658;');
+                });
+            });
+        });
+    }
+
+    function createCharts() {
+        const createDoughnut = (canvasId, data, labels) => new Chart(document.getElementById(canvasId).getContext('2d'), {
+            type: 'doughnut',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: datasetStats.colors, borderColor: '#fff', borderWidth: 2 }] },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { 
+                        display: true, 
+                        position: 'bottom', 
+                        labels: { 
+                            boxWidth: 12, 
+                            padding: 8,
+                            font: { size: 10 }
+                        } 
+                    } 
+                } 
+            }
+        });
+        const totalUtterances = datasetStats.proUtterances.map((p, i) => p + datasetStats.nonProUtterances[i]);
+        charts.utterances = createDoughnut('utterance-chart', totalUtterances, datasetStats.labels);
+        const totalDurations = datasetStats.proDuration.map((p, i) => p + datasetStats.nonProDuration[i]);
+        charts.duration = createDoughnut('duration-chart', totalDurations, datasetStats.labels);
+    }
+
+    function updateStatsDisplay() {
+        const titleElement = document.getElementById('stats-scenario-title');
+        const statElements = document.querySelectorAll('.stat-value');
+        
+        if (currentScenario) {
+            // Show specific scenario stats
+            const scenarioIndex = scenarios.indexOf(currentScenario);
+            if (scenarioIndex !== -1) {
+                titleElement.textContent = currentScenario;
+                
+                const proUtterances = datasetStats.proUtterances[scenarioIndex];
+                const nonProUtterances = datasetStats.nonProUtterances[scenarioIndex];
+                const proDuration = datasetStats.proDuration[scenarioIndex];
+                const nonProDuration = datasetStats.nonProDuration[scenarioIndex];
+                
+                const proAvg = proUtterances > 0 ? (proDuration / proUtterances).toFixed(1) : '0.0';
+                const nonProAvg = nonProUtterances > 0 ? (nonProDuration / nonProUtterances).toFixed(1) : '0.0';
+                
+                statElements[0].innerHTML = `<span class="pro-stat">${proUtterances.toLocaleString()}</span> / <span class="non-pro-stat">${nonProUtterances.toLocaleString()}</span>`;
+                statElements[1].innerHTML = `<span class="pro-stat">${proAvg}s</span> / <span class="non-pro-stat">${nonProAvg}s</span>`;
+                statElements[2].innerHTML = `<span class="pro-stat">${proDuration.toLocaleString()}s</span> / <span class="non-pro-stat">${nonProDuration.toLocaleString()}s</span>`;
+            }
+        } else {
+            // Show all scenarios summary
+            titleElement.textContent = 'All Scenarios';
+            statElements[0].innerHTML = '<span class="pro-stat">1,847</span> / <span class="non-pro-stat">2,082</span>';
+            statElements[1].innerHTML = '<span class="pro-stat">8.0s</span> / <span class="non-pro-stat">8.6s</span>';
+            statElements[2].innerHTML = '<span class="pro-stat">14,792s</span> / <span class="non-pro-stat">17,853s</span>';
+        }
+    }
+
+
+    function setupFilters() {
+        const scenarioContainer = document.getElementById('scenario-buttons');
+        const allBtn = document.createElement('button');
+        allBtn.className = 'scenario-btn active';
+        allBtn.textContent = 'All Scenarios';
+        allBtn.dataset.scenario = 'All';
+        allBtn.style.backgroundColor = '#6c757d';
+        scenarioContainer.appendChild(allBtn);
+
+        scenarios.forEach((scenario, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'scenario-btn';
+            btn.textContent = scenario;
+            btn.dataset.scenario = scenario;
+            btn.style.backgroundColor = colors[index];
+            scenarioContainer.appendChild(btn);
+        });
+
+        scenarioContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const selectedScenario = e.target.dataset.scenario;
+                currentScenario = (selectedScenario === 'All') ? null : selectedScenario;
+                scenarioContainer.querySelectorAll('.scenario-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                updateStatsDisplay();
+                renderWaveforms();
+            }
+        });
+
+        document.getElementById('device-filter').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelectorAll('.device-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                currentDevice = e.target.dataset.device;
+                renderWaveforms();
+            }
+        });
+    }
+
+    createCharts();
+    updateStatsDisplay();
+    setupFilters();
+    renderWaveforms();
+});
+</script>
+</body>
+</html>
