@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SingVERSE Demo Page</title>
+    <title>SingVERSE</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/wavesurfer.js@7"></script>
@@ -93,7 +93,7 @@
                 <sup>2</sup>Central Media Technology Institute, Huawei
             </p>
             <div class="links-bar">
-                <a href="" target="_blank"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
+                <a href="https://arxiv.org/abs/2509.20969" target="_blank"><img src="https://img.shields.io/badge/arXiv-Paper-b31b1b.svg" alt="Paper"></a>
                 <a href="https://huggingface.co/datasets/amphion/SingVERSE" target="_blank"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset-yellow" alt="Dataset"></a>
             </div>
         </header>
@@ -243,7 +243,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function createCharts() {
         const createDoughnut = (canvasId, data, labels) => new Chart(document.getElementById(canvasId).getContext('2d'), {
             type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: data, backgroundColor: datasetStats.colors, borderColor: '#fff', borderWidth: 2 }] },
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    data: data, 
+                    backgroundColor: datasetStats.colors, 
+                    borderColor: '#fff', 
+                    borderWidth: 2,
+                    offset: new Array(data.length).fill(0) // Initialize offset array
+                }] 
+            },
             options: { 
                 responsive: true, 
                 maintainAspectRatio: false,
@@ -257,13 +266,57 @@ document.addEventListener('DOMContentLoaded', () => {
                             font: { size: 10 }
                         } 
                     } 
-                } 
+                },
+                onHover: (event, elements) => {
+                    event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default';
+                }
             }
         });
         const totalUtterances = datasetStats.proUtterances.map((p, i) => p + datasetStats.nonProUtterances[i]);
         charts.utterances = createDoughnut('utterance-chart', totalUtterances, datasetStats.labels);
         const totalDurations = datasetStats.proDuration.map((p, i) => p + datasetStats.nonProDuration[i]);
         charts.duration = createDoughnut('duration-chart', totalDurations, datasetStats.labels);
+    }
+
+    function highlightChartSegment(scenarioName) {
+        if (!scenarioName) {
+            // Reset all charts to original state
+            resetChartHighlights();
+            return;
+        }
+
+        const scenarioIndex = scenarios.indexOf(scenarioName);
+        if (scenarioIndex === -1) return;
+
+        // Create offset array - explode the selected segment
+        const explodeOffset = new Array(scenarios.length).fill(0);
+        explodeOffset[scenarioIndex] = 30; // Explode by 30 pixels
+
+        // Update utterance chart
+        if (charts.utterances) {
+            charts.utterances.data.datasets[0].offset = explodeOffset;
+            charts.utterances.update('active');
+        }
+
+        // Update duration chart
+        if (charts.duration) {
+            charts.duration.data.datasets[0].offset = explodeOffset;
+            charts.duration.update('active');
+        }
+    }
+
+    function resetChartHighlights() {
+        // Reset utterance chart
+        if (charts.utterances) {
+            charts.utterances.data.datasets[0].offset = new Array(scenarios.length).fill(0);
+            charts.utterances.update('active');
+        }
+
+        // Reset duration chart
+        if (charts.duration) {
+            charts.duration.data.datasets[0].offset = new Array(scenarios.length).fill(0);
+            charts.duration.update('active');
+        }
     }
 
     function updateStatsDisplay() {
@@ -324,6 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.target.classList.add('active');
                 updateStatsDisplay();
                 renderWaveforms();
+                highlightChartSegment(currentScenario);
             }
         });
 
