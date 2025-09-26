@@ -86,8 +86,8 @@
     <div class="container">
         <header>
             <h1>SingVERSE: a Diverse Real-world Benchmark for Singing Voice Enhancement</h1>
-            <p class="authors">Shaohan Jiang<sup>&star;1</sup> , Junan Zhang<sup>&star;1</sup> , Yunjia Zhang<sup>&star;1</sup> , Jing Yang<sup>2</sup>, Fan Fan<sup>2</sup>, Zhizheng Wu<sup>1</sup></p>
-            <p><sup>&star;</sup>Equal Contribution. Names are in alphabetical order. </p>
+            <p class="authors" id="authors-list">Shaohan Jiang<sup>&star;1</sup> , Junan Zhang<sup>&star;1</sup> , Yunjia Zhang<sup>&star;1</sup> , Jing Yang<sup>2</sup>, Fan Fan<sup>2</sup>, Zhizheng Wu<sup>1</sup></p>
+            <p><sup>&star;</sup>Equal Contribution. Name order is randomly generated. (shuffle on refresh) </p>
             <p class="authors">
                 <sup>1</sup>The Chinese University of Hong Kong, Shenzhen<br>
                 <sup>2</sup>Central Media Technology Institute, Huawei
@@ -176,6 +176,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    // Randomize co-first authors order
+    function randomizeAuthors() {
+        const coFirstAuthors = [
+            'Shaohan Jiang<sup>&star;1</sup>',
+            'Junan Zhang<sup>&star;1</sup>',
+            'Yunjia Zhang<sup>&star;1</sup>'
+        ];
+        
+        // Fisher-Yates shuffle algorithm
+        for (let i = coFirstAuthors.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [coFirstAuthors[i], coFirstAuthors[j]] = [coFirstAuthors[j], coFirstAuthors[i]];
+        }
+        
+        // Combine with other authors
+        const otherAuthors = ['Jing Yang<sup>2</sup>', 'Fan Fan<sup>2</sup>', 'Zhizheng Wu<sup>1</sup>'];
+        const allAuthors = [...coFirstAuthors, ...otherAuthors];
+        
+        // Update the authors list
+        const authorsElement = document.getElementById('authors-list');
+        if (authorsElement) {
+            authorsElement.innerHTML = allAuthors.join(' , ');
+        }
+    }
+    
+    // Call the randomization function
+    randomizeAuthors();
+
     const scenarios = ["Concert Hall", "Concert", "Arcade", "Restaurant", "Rehearsal Room", "Classroom", "Basement", "Roadside", "KTV", "Piano Room", "Passageway", "Staircase", "Meeting Room", "Parking Lot", "In the Car", "Shopping Mall", "Dormitory", "Office", "Park"];
     const colors = ['#ff9aa2', '#ffb7b2', '#ffdac1', '#e2f0cb', '#b5ead7', '#a2d2ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fec89a', '#fde4cf', '#d4a5a5', '#97a7b3', '#c3bef0', '#8de4ff', '#a7d8b1', '#e5d9f2', '#f9d5e5', '#ffffd1'];
     const proColors = ['#0d6efd', '#0a58ca'];
